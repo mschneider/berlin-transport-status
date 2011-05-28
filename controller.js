@@ -1,23 +1,23 @@
-var stations = require('./stations.js'),
+var vbb = require('./vbb.js'),
     request = require('request'),
     http = require('http'),
     io = require('socket.io');
 var crawlers = process.argv.slice(1);
 var fetch_interval = 5 * 60 * 1000;
 
-var @ = {}; // Stations => Journeys
-var # = {}; // Times => Journeys
+var stations = {}; // List of Journeys
+var depTimes = {}; // List of Journeys
 
 var unregisterJourney = function(journey) {
-  var oldIndex = #[journey.depTime].indexOf(journey);
+  var oldIndex = depTimes[journey.depTime].indexOf(journey);
   if (oldIndex >= 0)
-    delete #[journey.depTime][oldIndex];
-});
+    delete depTimes[journey.depTime][oldIndex];
+};
 
 var registerJourney = function(journey) {
-  if (!#[journey.depTime])
-    #[journey.depTime] = [];
-  #[journey.depTime].push(journey);
+  if (!depTimes[journey.depTime])
+    depTimes[journey.depTime] = [];
+  depTimes[journey.depTime].push(journey);
 };
 
 var updateStation = function(error, response, station) {
@@ -25,11 +25,11 @@ var updateStation = function(error, response, station) {
     console.error("Request to crawler failled.", error, response)
     return;
   }
-  var oldJourneys = @[station.stationId],
+  var oldJourneys = stations[station.stationId],
       newJourneys = station.journeys;
   oldJourneys.forEach(unregisterJourney);
   newJourneys.forEach(registerJourney);
-  @[station.stationId] = newJourneys;
+  stations[station.stationId] = newJourneys;
 };
 
 var crawlerIndex = 0;
@@ -39,7 +39,7 @@ var fetchStation = function(stationId) {
   crawlerIndex = crawlerIndex + 1 % crawlers.length;
 };
 
-stations.forEach( function(stationId) {
+vbb.station_list.forEach( function(stationId) {
   setInterval(function() { fetchStation(stationId); }, fetch_interval);
   // sleep shortly
 });
@@ -67,10 +67,10 @@ socket.on('connection', function(client) {
 var pushDepartures = function() {
   var currentTime = new Date();
   clients.forEach(function(client) {
-    client.send(JSON.stringify(#['' + currentTime.getHours()
+    client.send(JSON.stringify(depTimes['' + currentTime.getHours()
       + ':' + currentTime.getMinutes()]));
   });
 };
 setInterval(pushDepartures, 60*1000);
 
-sys.puts('Controller running at http://127.0.0.1:80/');
+console.log('Controller running at http://127.0.0.1:80/');
