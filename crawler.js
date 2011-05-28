@@ -9,7 +9,8 @@ var currentTime = function() { return new Date(); };
 
 var crawlerChain = chainGang.create({workers: 1});
 crawlerChain.on('add', function(url) {
-  console.log('[CRAWLER]', currentTime(), 'added:', url)
+  console.log('[CRAWLER]', currentTime(), 'added:', url, 'chain length:', 
+    crawlerChain.queue.length);
 });
 crawlerChain.on('finished', function(url, error) {
   if (error) {
@@ -42,15 +43,21 @@ var crawl = function(worker, stationId, cb, errCb) {
       + stationId + '&boardType=dep&productsFilter=1100000&start=yes&maxJourneys=15';
     request({url: requestUrl}, function (error, response, body) {
         if (!error && response.statusCode == 200)
-          parse(body, cb);
+          parse(body, function(parsedJourneys) {
+            if (cb) cb(parsedJourneys);
+            worker.finish();
+          });
         else {
-          console.log('Error while talking to vbb', error, JSON.stringify(response));
+          worker.finish(error);
           if (errCb) errCb(error);
         }
       }
     );
-  } catch(e) { error = e; }
-  worker.finish(error);
+  } catch(e) { 
+    error = e;
+    worker.finish(error);
+    if (errCb) errCb(error);
+  }
 };
 
 http.createServer(function(request, response) {
