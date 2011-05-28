@@ -13,9 +13,9 @@ crawlerChain.on('add', function(url) {
 });
 crawlerChain.on('finished', function(url, error) {
   if (error) {
-    console.error('[CRAWLER]', currentTime(), url, error)
+    console.error('[CRAWLER]', currentTime(), 'error at:', url, error)
   } else {
-    console.log('[CRAWLER]', currentTime(), url ,'finished.') 
+    console.log('[CRAWLER]', currentTime(), 'finished:', url ) 
   }
 });
 
@@ -57,8 +57,8 @@ http.createServer(function(request, response) {
     response.end('error!');
   });
 
+  var stationId = parseInt(url.parse(request.url).pathname.slice(1), 10);
   var workerFunction = function(worker) { 
-    var stationId = 9120004;
     crawl(worker, stationId, function(journeys) {
       var jsonResp = {
         'station': stationId,
@@ -68,7 +68,7 @@ http.createServer(function(request, response) {
     });
   };
   
-  crawlerChain.add(workerFunction, request.url);
+  crawlerChain.add(workerFunction, stationId);
   response.writeHead(200, {'Content-Type': 'application/json'});
 }).listen(8221, "127.0.0.1");
 sys.puts('Crawler running at http://127.0.0.1:8221/');
