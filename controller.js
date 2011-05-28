@@ -7,10 +7,12 @@ var vbb = require('./vbb.js'),
     io = require('socket.io');
 var crawlers = process.argv.slice(2);
 var MINUTE = 60*1000
-var fetch_interval = 2 * MINUTE;
+var refetch_interval = 2 * MINUTE;
+var fetch_interval = refetch_interval / vbb.station_list.length;
 
-var stations = {}; // List of Journeys
-var depTimes = {}; // List of Journeys
+// 2 Lists of Journeys
+var stations = {}; 
+var depTimes = {};
 
 var unregisterJourney = function(journey) {
   depTimes[journey.depTime] = 
@@ -49,13 +51,15 @@ var fetchStation = function(stationId) {
   console.log('Fetching station ' + url);
   request({'url': url}, updateStation);
   crawlerIndex = crawlerIndex + 1 % crawlers.length;
+  setTimeout(function() { fetchStation(stationId) }, refetch_interval);
 };
 
-vbb.station_list.forEach( function(stationId) {
-  setInterval(function() { fetchStation(stationId); }, fetch_interval);
-  fetchStation(stationId);
-  // sleep shortly
-});
+var setupFetching = function(index) {
+  if (index == vbb.station_list.length) return;
+  fetchStation(vbb.station_list[index]);
+  setTimeout(function() { setupFetching(index+1); }, fetch_interval);
+};
+setupFetching(0);
 
 server = http.createServer(function(req, res) { 
   var uri = url.parse(req.url).pathname
@@ -68,9 +72,8 @@ server = http.createServer(function(req, res) {
       res.end();
       return;
     }
-
-	if (fs.statSync(filename).isDirectory()) filename += '/index.html';
-
+    if (fs.statSync(filename).isDirectory())
+      filename += '/index.html';
     fs.readFile(filename, "binary", function(err, file) {
       if(err) {        
         res.writeHead(500, {"Content-Type": "text/plain"});
@@ -78,7 +81,6 @@ server = http.createServer(function(req, res) {
         res.end();
         return;
       }
-
       res.writeHead(200);
       res.write(file, "binary");
       res.end();
@@ -91,7 +93,7 @@ server.listen(80);
 var socket = io.listen(server); 
 var clients = [];
 socket.on('connection', function(client) { 
-  console.log('client connected.');
+  console.log(new Date(), 'Client connected.');
   clients.push(client);
   client.on('disconnect', function() {
     var clientIndex = clients.indexOf(client);
@@ -105,7 +107,7 @@ var pushDepartures = function() {
   var hours = addLeadingZeroAndConvertToString(currentTime.getHours());
   var minutes = addLeadingZeroAndConvertToString(currentTime.getMinutes());
   var timeStr = hours + ':' + minutes;
-  console.log(timeStr, JSON.stringify(depTimes));
+  console.log(timeStr, 'sending:', JSON.stringify(depTimes));
   clients.forEach(function(client) {
     client.send(JSON.stringify(depTimes[timeStr]));
   });
@@ -114,6 +116,5 @@ var pushDepartures = function() {
   }
 };
 setInterval(pushDepartures, MINUTE);
-pushDepartures();
 
 console.log('Controller running at http://127.0.0.1:80/');
