@@ -5,8 +5,8 @@ var vbb = require('./vbb.js'),
     url = require('url'),
     path = require('path'),
     io = require('socket.io');
-var crawlers = process.argv.slice(1);
-var fetch_interval = 5 * 60 * 1000;
+var crawlers = process.argv.slice(2);
+var fetch_interval = 60 * 1000;
 
 var stations = {}; // List of Journeys
 var depTimes = {}; // List of Journeys
@@ -28,8 +28,8 @@ var updateStation = function(error, response, station) {
     console.error("Request to crawler failled.", error, response)
     return;
   }
-  var oldJourneys = stations[station.stationId],
-      newJourneys = station.journeys;
+  var oldJourneys = stations[station.stationId] || [],
+      newJourneys = JSON.parse(station).journeys;
   oldJourneys.forEach(unregisterJourney);
   newJourneys.forEach(registerJourney);
   stations[station.stationId] = newJourneys;
@@ -37,13 +37,15 @@ var updateStation = function(error, response, station) {
 
 var crawlerIndex = 0;
 var fetchStation = function(stationId) {
-  var url = crawlers[crawlerIndex] + '/' + stationId
+  var url = crawlers[crawlerIndex] + '/' + stationId;
+  console.log('Fetching station ' + url);
   request({'url': url}, updateStation);
   crawlerIndex = crawlerIndex + 1 % crawlers.length;
 };
 
 vbb.station_list.forEach( function(stationId) {
   setInterval(function() { fetchStation(stationId); }, fetch_interval);
+  fetchStation(stationId);
   // sleep shortly
 });
 
