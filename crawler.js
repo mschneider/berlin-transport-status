@@ -20,7 +20,6 @@ crawlerChain.on('finished', function(url, error) {
 });
 
 var parse = function(body, cb) {
-  //console.log("Parser called! ", body);
   var journeys = [];
   $(body).find('.sq').each(function(index, journey) {
     var data = $(journey).text().split('\n');
