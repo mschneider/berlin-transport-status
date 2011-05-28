@@ -96,11 +96,16 @@ socket.on('connection', function(client) {
 
 var pushDepartures = function() {
   var currentTime = new Date();
-  var timeStr = '' + currentTime.getHours() + ':' + currentTime.getMinutes();
+  var hours = addLeadingZeroAndConvertToString(currentTime.getHours());
+  var minutes = addLeadingZeroAndConvertToString(currentTime.getMinutes());
+  var timeStr = hours + ':' + minutes;
   console.log(timeStr, JSON.stringify(depTimes));
   clients.forEach(function(client) {
     client.send(JSON.stringify(depTimes[timeStr]));
   });
+  function addLeadingZeroAndConvertToString(num) {
+    return (num < 10 ? '0' : '') + num;
+  }
 };
 setInterval(pushDepartures, MINUTE);
 pushDepartures();
