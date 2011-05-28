@@ -107,7 +107,6 @@ var pushDepartures = function() {
   var hours = addLeadingZeroAndConvertToString(currentTime.getHours());
   var minutes = addLeadingZeroAndConvertToString(currentTime.getMinutes());
   var timeStr = hours + ':' + minutes;
-  console.log(timeStr, 'sending:', JSON.stringify(depTimes));
   clients.forEach(function(client) {
     client.send(JSON.stringify(depTimes[timeStr]));
   });
