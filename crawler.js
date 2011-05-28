@@ -59,6 +59,9 @@ http.createServer(function(request, response) {
   var stationId = parseInt(url.parse(request.url).pathname.slice(1), 10);
   var workerFunction = function(worker) { 
     crawl(worker, stationId, function(journeys) {
+      journeys.forEach(function(journey) {
+        journey.stationId = stationId;
+      });
       var jsonResp = {
         'stationId': stationId,
         'journeys': journeys
