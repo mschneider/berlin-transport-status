@@ -35,7 +35,7 @@ var parse = function(body, cb) {
   if (cb) cb(journeys);
 };
 
-var crawl = function(worker, stationId, cb) {
+var crawl = function(worker, stationId, cb, errCb) {
   var error;
   try {
     var requestUrl = 'http://www.vbb-fahrinfo.de/hafas/stboard.exe/dox?ld=&input='
@@ -43,6 +43,10 @@ var crawl = function(worker, stationId, cb) {
     request({url: requestUrl}, function (error, response, body) {
         if (!error && response.statusCode == 200)
           parse(body, cb);
+        else {
+          console.log('Error while talking to vbb', error, JSON.stringify(response));
+          if (errCb) errCb(error);
+        }
       }
     );
   } catch(e) { error = e; }
@@ -66,11 +70,14 @@ http.createServer(function(request, response) {
         'stationId': stationId,
         'journeys': journeys
       };
+      response.writeHead(200, {'Content-Type': 'application/json'});
       response.end(JSON.stringify(jsonResp));
+    }, function onError(error) {
+      response.writeHead(500, {'Content-Type': 'application/json'});
+      response.end(error);
     });
   };
   
   crawlerChain.add(workerFunction, stationId);
-  response.writeHead(200, {'Content-Type': 'application/json'});
 }).listen(8221, "127.0.0.1");
 sys.puts('Crawler running at http://127.0.0.1:8221/');

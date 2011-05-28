@@ -6,15 +6,17 @@ var vbb = require('./vbb.js'),
     path = require('path'),
     io = require('socket.io');
 var crawlers = process.argv.slice(2);
-var fetch_interval = 60 * 1000;
+var MINUTE = 60*1000
+var fetch_interval = 2 * MINUTE;
 
 var stations = {}; // List of Journeys
 var depTimes = {}; // List of Journeys
 
 var unregisterJourney = function(journey) {
-  var oldIndex = depTimes[journey.depTime].indexOf(journey);
-  if (oldIndex >= 0)
-    delete depTimes[journey.depTime][oldIndex];
+  depTimes[journey.depTime] = 
+    depTimes[journey.depTime].filter(function(otherJourney) {
+      return journey != otherJourney;
+    });
 };
 
 var registerJourney = function(journey) {
@@ -88,17 +90,19 @@ socket.on('connection', function(client) {
   client.on('disconnect', function() {
     var clientIndex = clients.indexOf(client);
     if (clientIndex >= 0)
-      delete clients[clientIndex];
+      clients = clients.splice(clientIndex, 1);
   });
 }); 
 
 var pushDepartures = function() {
   var currentTime = new Date();
+  var timeStr = '' + currentTime.getHours() + ':' + currentTime.getMinutes();
+  console.log(timeStr, JSON.stringify(depTimes));
   clients.forEach(function(client) {
-    client.send(JSON.stringify(depTimes['' + currentTime.getHours()
-      + ':' + currentTime.getMinutes()]));
+    client.send(JSON.stringify(depTimes[timeStr]));
   });
 };
-setInterval(pushDepartures, 60*1000);
+setInterval(pushDepartures, MINUTE);
+pushDepartures();
 
 console.log('Controller running at http://127.0.0.1:80/');
