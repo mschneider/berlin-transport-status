@@ -1,0 +1,21 @@
+<html>
+<head>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="text/javascript" charset="utf-8">
+    var socket = new io.Socket(); 
+    socket.on('connect', function(){ 
+      $("body").append("Socket connected!<br/>")
+    }) 
+    socket.on('message', function(data){ 
+      $("body").append(data + "<br/>");
+    })
+    socket.on('disconnect', function(){
+      $("body").append("Socket disconnected!<br/>")
+    });
+    socket.connect();
+  </script>
+</head>
+<body>
+</body>
+</html>

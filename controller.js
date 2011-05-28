@@ -1,6 +1,9 @@
 var vbb = require('./vbb.js'),
     request = require('request'),
     http = require('http'),
+    fs = require('fs'),
+    url = require('url'),
+    path = require('path'),
     io = require('socket.io');
 var crawlers = process.argv.slice(1);
 var fetch_interval = 5 * 60 * 1000;
@@ -45,9 +48,32 @@ vbb.station_list.forEach( function(stationId) {
 });
 
 server = http.createServer(function(req, res) { 
- // your normal server code 
- res.writeHead(200, {'Content-Type': 'text/html'}); 
- res.end('<h1>Hello world</h1>'); 
+  var uri = url.parse(req.url).pathname
+    , filename = path.join(process.cwd(), 'static', uri);
+  
+  path.exists(filename, function(exists) {
+    if(!exists) {
+      res.writeHead(404, {"Content-Type": "text/plain"});
+      res.write("404 Not Found\n");
+      res.end();
+      return;
+    }
+
+	if (fs.statSync(filename).isDirectory()) filename += '/index.html';
+
+    fs.readFile(filename, "binary", function(err, file) {
+      if(err) {        
+        res.writeHead(500, {"Content-Type": "text/plain"});
+        res.write(err + "\n");
+        res.end();
+        return;
+      }
+
+      res.writeHead(200);
+      res.write(file, "binary");
+      res.end();
+    });
+  });
 });
 server.listen(80);
   
