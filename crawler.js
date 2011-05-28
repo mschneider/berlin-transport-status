@@ -39,8 +39,15 @@ var parse = function(body, cb) {
 var crawl = function(worker, stationId, cb, errCb) {
   var error;
   try {
+    var time = (new Date()).getTime();
+    time -= 1000 * 60 * 5; // 5 minutes ago;
+    time = new Date(time);
+    var hours = addLeadingZeroAndConvertToString(time.getHours());
+    var minutes = addLeadingZeroAndConvertToString(time.getMinutes());
+    time = hours + ":" + minutes;
     var requestUrl = 'http://www.vbb-fahrinfo.de/hafas/stboard.exe/dox?ld=&input='
-      + stationId + '&boardType=dep&productsFilter=1100000&start=yes&maxJourneys=15';
+      + stationId + '&boardType=dep&productsFilter=1100000&start=yes&maxJourneys=15&time='
+      + time;
     request({url: requestUrl}, function (error, response, body) {
         if (!error && response.statusCode == 200)
           parse(body, function(parsedJourneys) {
@@ -57,6 +64,10 @@ var crawl = function(worker, stationId, cb, errCb) {
     error = e;
     worker.finish(error);
     if (errCb) errCb(error);
+  }
+  
+  function addLeadingZeroAndConvertToString(num) {
+    return (num < 10 ? '0' : '') + num;
   }
 };
 
