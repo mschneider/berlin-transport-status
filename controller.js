@@ -30,8 +30,14 @@ var updateStation = function(error, response, station) {
     console.error("Request to crawler failled.", error, response)
     return;
   }
+  try {
+    station = JSON.parse(station);
+  } catch(e) {
+    console.error("Crawler returned invalid JSON", station);
+    return;
+  }
   var oldJourneys = stations[station.stationId] || [],
-      newJourneys = JSON.parse(station).journeys;
+      newJourneys = station.journeys;
   oldJourneys.forEach(unregisterJourney);
   newJourneys.forEach(registerJourney);
   stations[station.stationId] = newJourneys;
