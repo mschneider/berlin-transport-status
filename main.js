@@ -1,9 +1,8 @@
 var sys = require('sys'),
   http = require('http'),
   url = require('url'),
-  fs = require('fs'),
-  chainGang = require('chain-gang');
-
+  chainGang = require('chain-gang'),
+  request = require('request');
 
 var currentTime = function() { return new Date(); };
 
@@ -19,12 +18,22 @@ crawlerChain.on('finished', function(url, error) {
   }
 });
 
-var crawl = function(worker, parsedUrl) {
+var parse = function(body) {
+  console.log("Parser called! ", body)
+};
+
+var crawl = function(worker, stationId) {
   var error;
   try {
-    console.log(parsedUrl);
+    var requestUrl = 'http://www.vbb-fahrinfo.de/hafas/stboard.exe/dox?ld=&input='
+      + stationId + '&boardType=dep&productsFilter=1100000&start=yes&maxJourneys=15';
+    request({url: requestUrl}, function (error, response, body) {
+        if (!error && response.statusCode == 200)
+          parse(body);
+      }
+    );
   } catch(e) { error = e; }
-  worker.finish(error)
+  worker.finish(error);
 };
 
 http.createServer(function(request, response) {
@@ -35,7 +44,7 @@ http.createServer(function(request, response) {
   });
   
   crawlerChain.add(
-    function(worker) { crawl(worker, url.parse(request.url, true)); },
+    function(worker) { crawl(worker, 9120004); },
     request.url
   );
   response.writeHead(200, {'Content-Type': 'text/plain'});
