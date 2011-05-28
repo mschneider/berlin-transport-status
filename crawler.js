@@ -48,7 +48,7 @@ var crawl = function(worker, stationId, cb, errCb) {
             worker.finish();
           });
         else {
-          worker.finish(error);
+          worker.finish('Status: ' + response.statusCode + 'Error: ' + error);
           if (errCb) errCb(error);
         }
       }
