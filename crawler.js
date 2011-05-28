@@ -60,7 +60,7 @@ http.createServer(function(request, response) {
   var workerFunction = function(worker) { 
     crawl(worker, stationId, function(journeys) {
       var jsonResp = {
-        'station': stationId,
+        'stationId': stationId,
         'journeys': journeys
       };
       response.end(JSON.stringify(jsonResp));
