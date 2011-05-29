@@ -7,7 +7,7 @@ var vbb = require('./vbb.js'),
     io = require('socket.io');
 var crawlers = process.argv.slice(2);
 var MINUTE = 60*1000
-var refetch_interval = 2 * MINUTE;
+var refetch_interval = 5 * MINUTE;
 var fetch_interval = refetch_interval / vbb.station_list.length;
 
 var lastPush = new Date();
