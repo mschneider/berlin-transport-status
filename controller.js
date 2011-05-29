@@ -107,19 +107,133 @@ socket.on('connection', function(client) {
   });
 }); 
 
-var pushDepartures = function() {
+var handleDepartures = function() {
   var currentTime = new Date();
   var hours = addLeadingZeroAndConvertToString(currentTime.getHours());
   var minutes = addLeadingZeroAndConvertToString(currentTime.getMinutes());
   var timeStr = hours + ':' + minutes;
-  clients.forEach(function(client) {
-    client.send(JSON.stringify(depTimes[timeStr]));
-  });
+  pushDepartures(timeStr);
+  //scheduleSoundtrack(timeStr);
+  lastPush = currentTime;
+  
   function addLeadingZeroAndConvertToString(num) {
     return (num < 10 ? '0' : '') + num;
   }
-  lastPush = currentTime;
 };
-setInterval(pushDepartures, MINUTE);
+
+var pushDepartures = function(timeStr) {
+  clients.forEach(function(client) {
+    client.send('data:' + JSON.stringify(depTimes[timeStr]));
+  });
+};
+
+function Track(voice) {
+    this.voice = voice
+    this.parts = [null, null, null, null, null];
+    
+    var choose = function(callback, options) {
+        var decission = parseInt(options.length * Math.random());
+        callback(options[decission]);
+    };
+    
+    this.add = function(partToAdd) {
+        var that = this;
+        freeParts = [];
+        for (var i = 0; i < this.parts.length; i++) {
+            if (this.parts[i] == null)
+                freeParts.push(i);
+        }
+        if (freeParts.length > 0) {
+            choose(function(freeIndex) {
+                that.parts[freeIndex] = partToAdd;
+            }, freeParts);
+            return true;
+        } else {
+            return false;
+        }
+    };
+};
+
+function Soundtrack(routesDeparted) {
+    this.melodys = {low: new Track('low'), high: new Track('high')};
+    this.rhythms = {low: new Track('low'), mid: new Track('mid'), high: new Track('high')};
+    
+    var chooseOfTwo = function(callback, firstChoice, secondChoice) {
+        if (Math.random() < 0.5)
+            callback(firstChoice, secondChoice);
+        else
+            callback(secondChoice, firstChoice)
+    };
+
+    var chooseOfThree = function(callback, firstChoice, secondChoice, thirdChoice) {
+        switch (parseInt(3 * Math.random())) {
+            case 0:
+                return callback(firstChoice,secondChoice,thirdChoice);
+            case 1:
+                return callback(secondChoice,thirdChoice,firstChoice);
+            case 2:
+                return callback(thirdChoice,firstChoice,secondChoice);
+        }
+    };
+    
+    this.addMelody = function(route) {
+        chooseOfTwo(function(firstChoice, secondChoice) {
+            if (!firstChoice.add(route)) {
+                secondChoice.add(route);
+            }}, this.melodys.low, this.melodys.high);
+    };
+    
+    this.addRhythm = function(route) {
+        chooseOfThree( function(firstChoice, secondChoice, thirdChoice) {
+            if (!firstChoice.add(route)) {
+                if (!secondChoice.add(route)) {
+                    thirdChoice.add(route);
+                }
+            }
+        }, this.rhythms.low, this.rhythms.mid, this.rhythms.high);
+    };
+    
+    this.addRoute = function(route) {
+        switch(route.slice(0,1)) {
+            case 'S':
+                return this.addRhythm(route);
+            case 'U':
+                return this.addMelody(route);
+        }
+    };
+    
+    this.play = function(index) {
+      console.log('playing:', this.melodys.low.parts[index],
+                              this.melodys.high.parts[index],
+                              this.rhythms.low.parts[index],
+                              this.rhythms.mid.parts[index],
+                              this.rhythms.high.parts[index]);  
+    };
+};
+
+var scheduleSoundtrack = function(timeStr) {
+    // TODO make it work
+    var st = new Soundtrack();
+    for (var route in routesDeparted) {
+        st.addRoute(route);
+    }
+    var numParts = new Track().parts.length;
+    for (var i = 0; i < numParts; i++) {
+        (function(time) {
+            setTimeout(function() {
+                st.play(time)
+            }, (time * 1000 * 60 / numParts))
+        })(i);
+    }
+};
+
+
+
+
+setInterval(handleDepartures, MINUTE);
+
+
+
+
 
 console.log('Controller running at http://127.0.0.1:80/');
