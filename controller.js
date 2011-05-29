@@ -10,6 +10,8 @@ var MINUTE = 60*1000
 var refetch_interval = 2 * MINUTE;
 var fetch_interval = refetch_interval / vbb.station_list.length;
 
+var lastPush = new Date();
+
 // 2 Lists of Journeys
 var stations = {}; 
 var depTimes = {};
@@ -93,7 +95,10 @@ server.listen(80);
 var socket = io.listen(server); 
 var clients = [];
 socket.on('connection', function(client) { 
-  console.log(new Date(), 'Client connected.');
+  var currentTime = new Date();
+  var nextPush = ((60*1000) - (currentTime.getTime() - lastPush.getTime()))/1000;
+  console.log(currentTime, 'Client connected.');
+  console.log("Next push in", nextPush, "seconds.");
   clients.push(client);
   client.on('disconnect', function() {
     var clientIndex = clients.indexOf(client);
@@ -113,6 +118,7 @@ var pushDepartures = function() {
   function addLeadingZeroAndConvertToString(num) {
     return (num < 10 ? '0' : '') + num;
   }
+  lastPush = currentTime;
 };
 setInterval(pushDepartures, MINUTE);
 
