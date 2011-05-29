@@ -103,6 +103,10 @@ socket.on('connection', function(client) {
   console.log(currentTime, 'Client connected.');
   console.log("Next push in", nextPush, "seconds.");
   clients.push(client);
+  setTimeout(function(){
+    console.log('playing einsteigen')
+    client.send('audioInit:');
+  }, nextPush - 30);
   client.on('disconnect', function() {
     var clientIndex = clients.indexOf(client);
     if (clientIndex >= 0)
