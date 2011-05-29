@@ -83,7 +83,10 @@ server = http.createServer(function(req, res) {
         res.end();
         return;
       }
-      res.writeHead(200);
+      if (filename.indexOf('.mp3') != -1)
+        res.writeHead(200, {"Content-Type": "audio/mp3"});
+      else
+        res.writeHead(200);
       res.write(file, "binary");
       res.end();
     });
@@ -113,7 +116,7 @@ var handleDepartures = function() {
   var minutes = addLeadingZeroAndConvertToString(currentTime.getMinutes());
   var timeStr = hours + ':' + minutes;
   pushDepartures(timeStr);
-  //scheduleSoundtrack(timeStr);
+  scheduleSoundtrack(timeStr);
   lastPush = currentTime;
   
   function addLeadingZeroAndConvertToString(num) {
@@ -124,6 +127,13 @@ var handleDepartures = function() {
 var pushDepartures = function(timeStr) {
   clients.forEach(function(client) {
     client.send('data:' + JSON.stringify(depTimes[timeStr]));
+  });
+};
+
+
+var pushAudio = function(tracks) {
+  clients.forEach(function(client) {
+    client.send('audio:' + JSON.stringify(tracks));
   });
 };
 
@@ -202,21 +212,35 @@ function Soundtrack(routesDeparted) {
         }
     };
     
+    this.getTrackNames = function(index) {
+      var names = [];
+      if (this.melodys.low.parts[index])
+        names.push('m_low_'  + this.melodys.low.parts[index]);
+      if (this.melodys.high.parts[index])
+        names.push('m_high_' + this.melodys.high.parts[index]);
+      if (this.rhythms.low.parts[index])
+        names.push('r_low_'  +  this.rhythms.low.parts[index]);
+      if (this.rhythms.mid.parts[index])
+        names.push('r_mid_'  + this.rhythms.mid.parts[index]);
+      if (this.rhythms.high.parts[index])
+        names.push('r_high_' + this.rhythms.high.parts[index]);
+      return names;
+    };
+    
     this.play = function(index) {
-      console.log('playing:', this.melodys.low.parts[index],
-                              this.melodys.high.parts[index],
-                              this.rhythms.low.parts[index],
-                              this.rhythms.mid.parts[index],
-                              this.rhythms.high.parts[index]);  
+      var trackNames = this.getTrackNames(index);
+      console.log('playing:', JSON.stringify(trackNames));
+      pushAudio(trackNames);
     };
 };
 
 var scheduleSoundtrack = function(timeStr) {
     // TODO make it work
+    var departures = depTimes[timeStr] || [];
     var st = new Soundtrack();
-    for (var route in routesDeparted) {
-        st.addRoute(route);
-    }
+    departures.forEach(function(departure) {
+      st.addRoute(departure.route);
+    });
     var numParts = new Track().parts.length;
     for (var i = 0; i < numParts; i++) {
         (function(time) {
@@ -227,13 +251,6 @@ var scheduleSoundtrack = function(timeStr) {
     }
 };
 
-
-
-
 setInterval(handleDepartures, MINUTE);
-
-
-
-
 
 console.log('Controller running at http://127.0.0.1:80/');
