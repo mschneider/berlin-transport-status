@@ -1,0 +1,3 @@
+[submodule "static/transitpulse"]
+	path = static/transitpulse
+	url = transitpulse@svn.hpi.uni-potsdam.de:transitpulse.git
