@@ -106,7 +106,7 @@ socket.on('connection', function(client) {
   setTimeout(function(){
     console.log('playing einsteigen')
     client.send('audioInit:');
-  }, nextPush - 30);
+  }, (nextPush - 30)*1000);
   client.on('disconnect', function() {
     var clientIndex = clients.indexOf(client);
     if (clientIndex >= 0)
