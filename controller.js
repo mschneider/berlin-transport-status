@@ -1,6 +1,7 @@
 var vbb = require('./vbb.js'),
     request = require('request'),
     http = require('http'),
+    express = require('express'),
     fs = require('fs'),
     url = require('url'),
     path = require('path'),
@@ -63,35 +64,8 @@ var setupFetching = function(index) {
 };
 setupFetching(0);
 
-server = http.createServer(function(req, res) { 
-  var uri = url.parse(req.url).pathname
-    , filename = path.join(process.cwd(), 'static', uri);
-  
-  path.exists(filename, function(exists) {
-    if(!exists) {
-      res.writeHead(404, {"Content-Type": "text/plain"});
-      res.write("404 Not Found\n");
-      res.end();
-      return;
-    }
-    if (fs.statSync(filename).isDirectory())
-      filename += '/index.html';
-    fs.readFile(filename, "binary", function(err, file) {
-      if(err) {        
-        res.writeHead(500, {"Content-Type": "text/plain"});
-        res.write(err + "\n");
-        res.end();
-        return;
-      }
-      if (filename.indexOf('.mp3') != -1)
-        res.writeHead(200, {"Content-Type": "audio/mp3"});
-      else
-        res.writeHead(200);
-      res.write(file, "binary");
-      res.end();
-    });
-  });
-});
+var server = express.createServer();
+server.use(express.static(path.join(__dirname, 'static')));
 server.listen(80);
   
 // socket.io 
