@@ -1,7 +1,9 @@
 Berlin Transit Pulse
 ====================
 
-A real-time visualization of public transport traffic in Berlin. Audibilized into a multi-track audio piece that changes with the traffic flow.
+A real-time visualization of public transport traffic in Berlin.
+Audibilized into a multi-track audio piece that changes with the traffic flow.
+Created at Music Hack Day Berlin 2011.
 
 Technology used:
 
